@@ -96,8 +96,7 @@ const App = () => {
             <span className="font-semibold text-emerald-600">
               {formData.fullName}
             </span>
-            . Your application for the #DecolonizingTheMind course at Chitepo
-            School of Ideology is being processed.
+            . Your application at Chitepo School of Ideology is being processed.
           </p>
           <button
             onClick={() => window.location.reload()}
