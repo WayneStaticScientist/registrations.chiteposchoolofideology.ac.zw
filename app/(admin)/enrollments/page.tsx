@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Spinner } from "@heroui/spinner";
 import { Eye, CheckCircle, XCircle, User, MapPin, Phone, Mail } from "lucide-react";
-import { CertificateOfferModal } from "../../components/CertificateOfferModal";
+import { CertificateOfferModal } from "@/components/CertificateOfferModal";
 import api from "@/services/api";
 
 interface Enrollment {
