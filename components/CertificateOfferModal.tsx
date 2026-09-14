@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CertificateTemplate } from './CertificateTemplate';
+import api from '@/services/api';
 
 interface CertificateOfferModalProps {
   enrollmentId: string;
@@ -29,10 +30,9 @@ export const CertificateOfferModal: React.FC<CertificateOfferModalProps> = ({
   useEffect(() => {
     const fetchPerformance = async () => {
       try {
-        const res = await fetch(`http://localhost:9991/api/v1/certificates/performance/${enrollmentId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setPerformance(data);
+        const res = await api.get(`/certificates/performance/${enrollmentId}`);
+        if (res.data) {
+          setPerformance(res.data);
         }
       } catch (err) {
         console.error('Failed to fetch performance:', err);
@@ -47,14 +47,9 @@ export const CertificateOfferModal: React.FC<CertificateOfferModalProps> = ({
     setOffering(true);
     try {
       // 1. Tell backend to create/fetch the Certificate model
-      const res = await fetch(`http://localhost:9991/api/v1/certificates/offer/${enrollmentId}`, {
-        method: 'POST',
-      });
+      const res = await api.post(`/certificates/offer/${enrollmentId}`);
       
-      if (!res.ok) throw new Error('Failed to generate certificate on backend');
-      
-      const cert = await res.json();
-      setCertificateData(cert);
+      setCertificateData(res.data);
 
       // 2. We use setTimeout to allow React to render the hidden CertificateTemplate with new data
       setTimeout(async () => {
