@@ -24,6 +24,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Check if role is admin
+  if (accessToken) {
+    try {
+      const payloadBase64 = accessToken.value.split('.')[1];
+      const payload = JSON.parse(atob(payloadBase64));
+      
+      if (payload.role && payload.role !== 'admin') {
+        const response = NextResponse.redirect(new URL("/login", request.url));
+        response.cookies.delete("accessToken");
+        response.cookies.delete("refreshToken");
+        return response;
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+  }
+
   return NextResponse.next();
 }
 

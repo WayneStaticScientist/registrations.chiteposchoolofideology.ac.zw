@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Spinner } from "@heroui/spinner";
 import { Eye, CheckCircle, XCircle, User, MapPin, Phone, Mail } from "lucide-react";
 import { CertificateOfferModal } from "../../components/CertificateOfferModal";
+import api from "@/services/api";
 
 interface Enrollment {
   _id: string;
@@ -27,12 +28,9 @@ export default function EnrollmentsPage() {
 
   const fetchEnrollments = async () => {
     try {
-      const res = await fetch("http://localhost:9991/api/v1/enrollments");
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data) {
-          setEnrollments(json.data);
-        }
+      const res = await api.get("/enrollments");
+      if (res.data?.data) {
+        setEnrollments(res.data.data);
       }
     } catch (err) {
       console.error("Failed to fetch enrollments", err);
@@ -49,19 +47,11 @@ export default function EnrollmentsPage() {
     if (isUpdating) return;
     setIsUpdating(true);
     try {
-      const res = await fetch(`http://localhost:9991/api/v1/enrollments/${id}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-      if (res.ok) {
-        // Refresh
-        await fetchEnrollments();
-        if (selectedEnrollment && selectedEnrollment._id === id) {
-           setSelectedEnrollment(null); // Close modal
-        }
+      await api.patch(`/enrollments/${id}/status`, { status });
+      // Refresh
+      await fetchEnrollments();
+      if (selectedEnrollment && selectedEnrollment._id === id) {
+         setSelectedEnrollment(null); // Close modal
       }
     } catch (error) {
       console.error(error);

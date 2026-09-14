@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { StatCard } from "@/components/admin/StatCard";
 import { Users, Clock, DollarSign } from "lucide-react";
 import { Spinner } from "@heroui/spinner";
+import api from "@/services/api";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -18,14 +19,9 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch("http://localhost:9991/api/v1/users/admin/dashboard/stats", {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            setStats(json.data);
-          }
+        const res = await api.get("/users/admin/dashboard/stats");
+        if (res.data?.data) {
+          setStats(res.data.data);
         }
       } catch (err) {
         console.error("Failed to fetch dashboard stats", err);
@@ -88,12 +84,12 @@ export default function AdminDashboardPage() {
         <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
         <p className="text-zinc-500 text-sm mb-6">Access common administrative tasks.</p>
         <div className="flex gap-4">
-            <a href="/enrollments" className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors">
-                Review Pending Enrollments
-            </a>
-            <a href="/fees" className="px-6 py-3 bg-zinc-100 text-zinc-900 font-medium rounded-xl hover:bg-zinc-200 transition-colors">
-                Manage Fee Structures
-            </a>
+          <a href="/enrollments" className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors">
+            Review Pending Enrollments
+          </a>
+          <a href="/fees" className="px-6 py-3 bg-zinc-100 text-zinc-900 font-medium rounded-xl hover:bg-zinc-200 transition-colors">
+            Manage Fee Structures
+          </a>
         </div>
       </div>
     </div>

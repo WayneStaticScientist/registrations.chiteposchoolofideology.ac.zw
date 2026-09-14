@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Spinner } from "@heroui/spinner";
 import { Plus, CreditCard, CheckCircle, Info } from "lucide-react";
+import api from "@/services/api";
 
 interface FeeStructure {
   _id: string;
@@ -31,12 +32,9 @@ export default function FeesPage() {
 
   const fetchFees = async () => {
     try {
-      const res = await fetch("http://localhost:9991/api/v1/payments/fees");
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data) {
-          setFees(json.data);
-        }
+      const res = await api.get("/payments/fees");
+      if (res.data?.data) {
+        setFees(res.data.data);
       }
     } catch (err) {
       console.error("Failed to fetch fees", err);
@@ -61,30 +59,21 @@ export default function FeesPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("http://localhost:9991/api/v1/payments/fees", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          amount: parseFloat(formData.amount),
-        }),
+      await api.post("/payments/fees", {
+        ...formData,
+        amount: parseFloat(formData.amount),
       });
-
-      if (res.ok) {
-        await fetchFees();
-        setIsModalOpen(false);
-        setFormData({
-          name: "",
-          amount: "",
-          currency: "USD",
-          description: "",
-          isMandatory: true,
-        });
-      }
+      await fetchFees();
+      setIsModalOpen(false);
+      setFormData({
+        name: "",
+        amount: "",
+        currency: "USD",
+        description: "",
+        isMandatory: true,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Failed to create fee structure", error);
     } finally {
       setIsSubmitting(false);
     }

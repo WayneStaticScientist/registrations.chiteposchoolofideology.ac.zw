@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Users, Briefcase, Plus, Search } from "lucide-react";
 import { Spinner } from "@heroui/spinner";
+import api from "@/services/api";
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -23,12 +24,9 @@ export default function EmployeesPage() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch("http://localhost:9991/api/v1/users/admin/employees", {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setEmployees(json.data || []);
+      const res = await api.get("/users/admin/employees");
+      if (res.data?.data) {
+        setEmployees(res.data.data);
       }
     } catch (err) {
       console.error("Failed to fetch employees", err);
@@ -53,33 +51,19 @@ export default function EmployeesPage() {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:9991/api/v1/users/admin/employees", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      await api.post("/users/admin/employees", formData);
+      setSuccess("Employee created successfully!");
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        role: "lecturer",
       });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || "Failed to create employee");
-      } else {
-        setSuccess("Employee created successfully!");
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
-          role: "lecturer",
-        });
-        fetchEmployees(); // Refresh list
-        setTimeout(() => setShowForm(false), 2000);
-      }
-    } catch (err) {
-      setError("Network error occurred.");
+      fetchEmployees(); // Refresh list
+      setTimeout(() => setShowForm(false), 2000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Network error occurred.");
     } finally {
       setIsSubmitting(false);
     }
