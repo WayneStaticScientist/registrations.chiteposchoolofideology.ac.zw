@@ -232,7 +232,10 @@ export default function FeesPage() {
                 />
                 <label htmlFor="isMandatory" className="text-sm font-bold text-zinc-700 flex flex-col cursor-pointer">
                   <span>Mandatory Fee</span>
-                  <span className="text-xs font-normal text-zinc-500">Check if this fee applies to all students automatically</span>
+                  <span className="text-xs font-normal text-zinc-500">
+                    Mandatory fees are summed and required on the student portal before accepted
+                    enrollments can complete registration.
+                  </span>
                 </label>
               </div>
 

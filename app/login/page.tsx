@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import api from "@/services/api";
 
 export default function LoginPage() {
@@ -9,7 +10,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,33 +18,54 @@ export default function LoginPage() {
 
     try {
       await api.post("/auth/login", { email, password });
-      // If successful, redirect to dashboard
       window.location.href = "/";
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Login failed");
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string; message?: string } } };
+      setError(
+        axiosErr.response?.data?.error ||
+          axiosErr.response?.data?.message ||
+          "Invalid email or password.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl p-8 border border-zinc-100 shadow-xl">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white border border-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm overflow-hidden p-2">
-            <img src="/apple-touch-icon.png" alt="Chitepo School Of Ideology" className="w-full h-full object-contain" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+        <div className="border-b border-slate-100 bg-white px-8 py-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 p-2 ring-1 ring-primary/20">
+            <Image
+              alt="Chitepo School of Ideology"
+              height={48}
+              src="/apple-touch-icon.png"
+              width={48}
+            />
           </div>
-          <h1 className="text-2xl font-black text-zinc-900">Admin Portal</h1>
-          <p className="text-zinc-500 text-sm mt-2">Sign in to manage registrations</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Registrations
+          </p>
+          <h1 className="mt-2 text-2xl font-bold text-slate-800">Admin sign in</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Use your administrator credentials to continue.
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4 px-8 py-8">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+            <label
+              htmlFor="admin-email"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Email
+            </label>
             <input
+              id="admin-email"
               type="email"
               required
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-colors"
+              autoComplete="username"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition-all focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15"
               placeholder="admin@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -52,11 +73,18 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
+            <label
+              htmlFor="admin-password"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Password
+            </label>
             <input
+              id="admin-password"
               type="password"
               required
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-colors"
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition-all focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -64,7 +92,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-600 text-sm font-medium rounded-xl text-center border border-red-100">
+            <div className="rounded-xl border border-secondary/25 bg-secondary/5 px-4 py-3 text-center text-sm font-medium text-secondary">
               {error}
             </div>
           )}
@@ -72,9 +100,16 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-zinc-900 text-white font-bold rounded-xl hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-white transition-colors hover:bg-primary/90 disabled:opacity-70"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                Signing in…
+              </>
+            ) : (
+              "Sign in"
+            )}
           </button>
         </form>
       </div>

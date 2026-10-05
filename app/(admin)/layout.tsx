@@ -1,36 +1,78 @@
+"use client";
+
+import { Menu, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
 import { Sidebar } from "@/components/admin/Sidebar";
+import api from "@/services/api";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        await api.get("/users/admin/dashboard/stats");
+        setCheckingAuth(false);
+      } catch {
+        router.replace("/login");
+      }
+    };
+    verify();
+  }, [router]);
+
+  if (checkingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar />
-      <main className="flex-1 ml-64 flex flex-col min-h-screen">
-        {/* Simple Top Header */}
-        <header className="h-20 bg-white border-b border-zinc-200 flex items-center justify-between px-8 sticky top-0 z-40 text-zinc-900">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 text-slate-800">
+      <Sidebar
+        isExpanded={isExpanded}
+        isMobileOpen={isMobileOpen}
+        setIsExpanded={setIsExpanded}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm lg:px-10">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold text-zinc-800">Registrations Portal</h2>
-            <div className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-wider">
-              Admin View
+            <button
+              type="button"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+              onClick={() => setIsMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={24} />
+            </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Administration
+              </p>
+              <h2 className="text-lg font-bold text-slate-800 md:text-xl">
+                Registrations portal
+              </h2>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-zinc-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
-                <span className="text-sm font-bold text-zinc-500">AD</span>
-            </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+            <User size={20} />
           </div>
         </header>
 
-        {/* Content Area */}
-        <div className="flex-1 p-8 overflow-auto text-zinc-900">
-          <div className="max-w-7xl mx-auto w-full">
-            {children}
-          </div>
-        </div>
-      </main>
+        <main className="flex-1 overflow-y-auto p-6 lg:p-10">{children}</main>
+      </div>
     </div>
   );
 }

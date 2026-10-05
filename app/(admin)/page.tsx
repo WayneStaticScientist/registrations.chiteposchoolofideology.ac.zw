@@ -1,20 +1,41 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Clock,
+  DollarSign,
+  Loader2,
+  Receipt,
+  Users,
+} from "lucide-react";
+
+import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
 import { StatCard } from "@/components/admin/StatCard";
-import { Users, Clock, DollarSign } from "lucide-react";
-import { Spinner } from "@heroui/spinner";
 import api from "@/services/api";
 
+interface AdminStats {
+  totalRegistered: number;
+  totalPending: number;
+  totalAmountBilled: number;
+  totalPaymentsCollected: number;
+  paidTransactionCount: number;
+  outstandingBalance: number;
+}
+
+function formatMoney(amount: number) {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(amount || 0);
+}
+
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({
-    totalRegistered: 0,
-    totalPending: 0,
-    totalBillingsCollected: 0,
-    totalAmountBilled: 0,
-    outstandingBalance: 0,
-  });
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -25,6 +46,7 @@ export default function AdminDashboardPage() {
         }
       } catch (err) {
         console.error("Failed to fetch dashboard stats", err);
+        setError("Could not load dashboard statistics.");
       } finally {
         setLoading(false);
       }
@@ -34,64 +56,90 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size="lg" color="success" />
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
+  if (error || !stats) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+        {error || "Something went wrong."}
+      </div>
+    );
+  }
+
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-zinc-900 mb-2">
-          Dashboard Overview
+    <div className="mx-auto max-w-7xl space-y-8">
+      <div className="border-b border-slate-200 pb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+          Overview
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-800">
+          Dashboard
         </h1>
-        <p className="text-zinc-500">
-          Monitor your school's enrollments and financials.
+        <p className="mt-2 text-slate-500">{today}</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Enrollments and payment collections across the school.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title="Total Registered Students"
+          title="Registered students"
           value={stats.totalRegistered}
           icon={Users}
-          color="blue"
         />
         <StatCard
-          title="Total Amount Billed"
-          value={`$${stats.totalAmountBilled.toFixed(2)}`}
-          icon={DollarSign}
-          color="emerald"
-        />
-        <StatCard
-          title="Total Collected"
-          value={`$${stats.totalBillingsCollected.toFixed(2)}`}
-          icon={DollarSign}
-          color="emerald"
-        />
-        <StatCard
-          title="Outstanding Balance"
-          value={`$${stats.outstandingBalance.toFixed(2)}`}
+          title="Pending enrollments"
+          value={stats.totalPending}
           icon={Clock}
-          color="amber"
-          trend="Needs Follow-up"
-          trendUp={false}
+          hint="Awaiting review or payment"
         />
-      </div>
+        <StatCard
+          title="Total collected"
+          value={formatMoney(stats.totalPaymentsCollected)}
+          icon={DollarSign}
+          hint={`${stats.paidTransactionCount} paid transaction${stats.paidTransactionCount === 1 ? "" : "s"} (Payment records)`}
+        />
+        <StatCard
+          title="Outstanding balance"
+          value={formatMoney(stats.outstandingBalance)}
+          icon={Receipt}
+          hint={`Billed ${formatMoney(stats.totalAmountBilled)} total`}
+        />
+      </section>
 
-      <div className="mt-12 bg-white rounded-3xl p-8 border border-zinc-100 shadow-sm">
-        <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
-        <p className="text-zinc-500 text-sm mb-6">Access common administrative tasks.</p>
-        <div className="flex gap-4">
-          <a href="/enrollments" className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors">
-            Review Pending Enrollments
-          </a>
-          <a href="/fees" className="px-6 py-3 bg-zinc-100 text-zinc-900 font-medium rounded-xl hover:bg-zinc-200 transition-colors">
-            Manage Fee Structures
-          </a>
+      <AdminAnalyticsCharts />
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <h2 className="text-lg font-bold text-slate-800">Quick actions</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Common registration and finance tasks.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/enrollments"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary/90"
+          >
+            Review enrollments
+            <ArrowRight size={16} />
+          </Link>
+          <Link
+            href="/fees"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:border-primary/30 hover:text-primary"
+          >
+            Manage fee structures
+          </Link>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
