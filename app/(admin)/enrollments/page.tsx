@@ -12,6 +12,7 @@ interface Enrollment {
   lastName: string;
   nationalId: string;
   phoneNumber: string;
+  email?: string;
   countryOfResidence: string;
   city: string;
   birthCity: string;
@@ -53,8 +54,10 @@ export default function EnrollmentsPage() {
       if (selectedEnrollment && selectedEnrollment._id === id) {
          setSelectedEnrollment(null); // Close modal
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
+      const axiosErr = error as { response?: { data?: { error?: string } } };
+      alert(axiosErr.response?.data?.error || "Failed to update enrollment status.");
     } finally {
       setIsUpdating(false);
     }
@@ -116,6 +119,9 @@ export default function EnrollmentsPage() {
                     <td className="px-6 py-4">
                       <div className="font-bold text-zinc-900">{enrollment.firstName} {enrollment.lastName}</div>
                       <div className="text-sm text-zinc-500">{enrollment.phoneNumber}</div>
+                      {enrollment.email && (
+                        <div className="text-sm text-zinc-500">{enrollment.email}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-zinc-600 font-medium">{enrollment.nationalId}</td>
                     <td className="px-6 py-4 text-zinc-500 text-sm">
@@ -190,6 +196,14 @@ export default function EnrollmentsPage() {
                     <Phone size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Phone</span>
                   </div>
                   <p className="font-bold text-zinc-900">{selectedEnrollment.phoneNumber}</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 text-zinc-400 mb-1">
+                    <Mail size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Email</span>
+                  </div>
+                  <p className="font-bold text-zinc-900 break-all">
+                    {selectedEnrollment.email || "—"}
+                  </p>
                 </div>
                 <div>
                   <div className="flex items-center gap-2 text-zinc-400 mb-1">
