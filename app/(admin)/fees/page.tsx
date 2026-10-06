@@ -1,8 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Spinner } from "@heroui/spinner";
-import { Plus, CreditCard, CheckCircle, Info } from "lucide-react";
+import {
+  Plus,
+  CreditCard,
+  CheckCircle,
+  Pencil,
+  History,
+  DollarSign,
+} from "lucide-react";
 import api from "@/services/api";
 
 interface FeeStructure {
@@ -14,21 +22,26 @@ interface FeeStructure {
   isMandatory: boolean;
   program?: string;
   intake?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+const emptyForm = {
+  name: "",
+  amount: "",
+  currency: "USD",
+  description: "",
+  isMandatory: true,
+  note: "",
+};
 
 export default function FeesPage() {
   const [fees, setFees] = useState<FeeStructure[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    amount: "",
-    currency: "USD",
-    description: "",
-    isMandatory: true,
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
   const fetchFees = async () => {
     try {
@@ -44,36 +57,79 @@ export default function FeesPage() {
   };
 
   useEffect(() => {
-    fetchFees();
+    void fetchFees();
   }, []);
 
-  const handleInputChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const mandatoryTotal = useMemo(
+    () =>
+      fees
+        .filter((f) => f.isMandatory)
+        .reduce((sum, f) => sum + (f.amount ?? 0), 0),
+    [fees],
+  );
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const target = e.target;
+    const name = target.name;
+    const value =
+      target instanceof HTMLInputElement && target.type === "checkbox"
+        ? target.checked
+        : target.value;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: any) => {
+  const openCreate = () => {
+    setFormData(emptyForm);
+    setEditingId(null);
+    setModalMode("create");
+  };
+
+  const openEdit = (fee: FeeStructure) => {
+    setEditingId(fee._id);
+    setFormData({
+      name: fee.name,
+      amount: String(fee.amount),
+      currency: fee.currency,
+      description: fee.description ?? "",
+      isMandatory: fee.isMandatory,
+      note: "",
+    });
+    setModalMode("edit");
+  };
+
+  const closeModal = () => {
+    if (isSubmitting) return;
+    setModalMode(null);
+    setEditingId(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post("/payments/fees", {
-        ...formData,
+      const payload = {
+        name: formData.name,
         amount: parseFloat(formData.amount),
-      });
+        currency: formData.currency,
+        description: formData.description,
+        isMandatory: formData.isMandatory,
+        note: formData.note.trim() || undefined,
+      };
+
+      if (modalMode === "edit" && editingId) {
+        await api.patch(`/payments/fees/${editingId}`, payload);
+      } else {
+        await api.post("/payments/fees", payload);
+      }
+
       await fetchFees();
-      setIsModalOpen(false);
-      setFormData({
-        name: "",
-        amount: "",
-        currency: "USD",
-        description: "",
-        isMandatory: true,
-      });
+      closeModal();
+      setFormData(emptyForm);
     } catch (error) {
-      console.error("Failed to create fee structure", error);
+      console.error("Failed to save fee structure", error);
+      alert("Could not save fee structure.");
     } finally {
       setIsSubmitting(false);
     }
@@ -81,118 +137,194 @@ export default function FeesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Spinner size="lg" color="success" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 relative">
-      <div className="mb-8 flex justify-between items-end">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-zinc-900 mb-2">
-            Fee Structures
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Finance
+          </p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-zinc-900">
+            Fee structures
           </h1>
-          <p className="text-zinc-500">
-            Define and manage the cost structures for students.
+          <p className="mt-2 max-w-xl text-zinc-500">
+            Define mandatory and optional fees. Changes are logged with dates for audit and
+            printing. Accepted and registered students&apos; balances update when mandatory
+            fees change.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-emerald-200 transition-all"
-        >
-          <Plus size={20} /> Add Fee Structure
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/fees/changelog"
+            className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+          >
+            <History size={18} />
+            Change log
+          </Link>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-primary/90"
+          >
+            <Plus size={18} />
+            Add fee
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <div className="flex items-center gap-3">
+            <DollarSign className="text-primary" size={22} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                Mandatory total
+              </p>
+              <p className="text-2xl font-black text-zinc-900">
+                USD {mandatoryTotal.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">
+            Active fee lines
+          </p>
+          <p className="text-2xl font-black text-zinc-900">{fees.length}</p>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">
+            Mandatory lines
+          </p>
+          <p className="text-2xl font-black text-zinc-900">
+            {fees.filter((f) => f.isMandatory).length}
+          </p>
+        </div>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="border-b border-zinc-100 px-6 py-4">
+          <h2 className="font-bold text-zinc-900">Current fee schedule</h2>
+        </div>
         {fees.length === 0 ? (
-          <div className="col-span-full py-12 text-center border-2 border-dashed border-zinc-200 rounded-3xl">
-             <CreditCard className="mx-auto text-zinc-300 mb-4" size={48} />
-             <h3 className="text-lg font-bold text-zinc-600 mb-1">No Fee Structures</h3>
-             <p className="text-zinc-400">Click the button above to add one.</p>
+          <div className="py-16 text-center">
+            <CreditCard className="mx-auto mb-4 text-zinc-300" size={48} />
+            <p className="text-zinc-500">No fee structures yet.</p>
           </div>
         ) : (
-          fees.map((fee) => (
-            <div key={fee._id} className="bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              
-              <div className="flex justify-between items-start mb-6">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-                  <CreditCard size={24} />
-                </div>
-                {fee.isMandatory ? (
-                   <span className="px-3 py-1 bg-zinc-100 text-zinc-600 text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
-                      Mandatory
-                   </span>
-                ) : (
-                   <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
-                      Optional
-                   </span>
-                )}
-              </div>
-              
-              <h3 className="text-xl font-bold text-zinc-900 mb-1">{fee.name}</h3>
-              <p className="text-sm text-zinc-500 mb-6 min-h-[40px] line-clamp-2">{fee.description}</p>
-              
-              <div className="pt-6 border-t border-zinc-100 flex items-end justify-between">
-                <div className="text-sm text-zinc-400 font-bold uppercase tracking-wider">{fee.currency}</div>
-                <div className="text-3xl font-black text-zinc-900 tracking-tight">
-                  <span className="text-zinc-400 text-xl font-medium mr-1">$</span>
-                  {fee.amount.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          ))
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-zinc-50 text-xs font-bold uppercase tracking-wide text-zinc-500">
+                <tr>
+                  <th className="px-6 py-3">Fee</th>
+                  <th className="px-6 py-3">Amount</th>
+                  <th className="px-6 py-3">Type</th>
+                  <th className="px-6 py-3">Last updated</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {fees.map((fee) => (
+                  <tr key={fee._id} className="hover:bg-zinc-50/80">
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-zinc-900">{fee.name}</p>
+                      <p className="max-w-md text-xs text-zinc-500 line-clamp-2">
+                        {fee.description}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-zinc-800">
+                      {fee.currency} {fee.amount.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
+                          fee.isMandatory
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {fee.isMandatory ? "Mandatory" : "Optional"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-zinc-600">
+                      {fee.updatedAt
+                        ? new Date(fee.updatedAt).toLocaleString()
+                        : fee.createdAt
+                          ? new Date(fee.createdAt).toLocaleString()
+                          : "—"}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(fee)}
+                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary/10"
+                      >
+                        <Pencil size={16} />
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </section>
 
-      {/* Add Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-8 py-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-              <h2 className="text-xl font-bold text-zinc-900">New Fee Structure</h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-300 hover:text-zinc-700 transition-colors"
+      {modalMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-6 py-4">
+              <h2 className="text-lg font-bold text-zinc-900">
+                {modalMode === "edit" ? "Update fee structure" : "New fee structure"}
+              </h2>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100"
               >
-                &times;
+                ×
               </button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+
+            <form onSubmit={handleSubmit} className="space-y-5 p-6">
+              {modalMode === "edit" && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                  Updates are recorded in the change log with today&apos;s date. Mandatory
+                  changes refresh billed amounts for accepted and registered students.
+                </p>
+              )}
+
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Fee Name</label>
+                <label className="text-sm font-bold text-zinc-700">Fee name</label>
                 <input
-                  type="text"
                   required
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="e.g. Base Tuition, Library Fee"
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-zinc-700">Amount</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-3.5 text-zinc-400 font-bold">$</span>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                    />
-                  </div>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-zinc-700">Currency</label>
@@ -200,7 +332,7 @@ export default function FeesPage() {
                     name="currency"
                     value={formData.currency}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all appearance-none"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="USD">USD</option>
                     <option value="ZWG">ZWG</option>
@@ -212,47 +344,62 @@ export default function FeesPage() {
                 <label className="text-sm font-bold text-zinc-700">Description</label>
                 <textarea
                   required
-                  name="description"
                   rows={3}
+                  name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Explain what this fee covers..."
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                ></textarea>
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30"
+                />
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700">
+                  Audit note (optional)
+                </label>
+                <input
+                  name="note"
+                  value={formData.note}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Board approval ref, intake 2026 adjustment"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
                 <input
                   type="checkbox"
-                  id="isMandatory"
                   name="isMandatory"
                   checked={formData.isMandatory}
                   onChange={handleInputChange}
-                  className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500"
+                  className="mt-1 h-5 w-5 rounded accent-primary"
                 />
-                <label htmlFor="isMandatory" className="text-sm font-bold text-zinc-700 flex flex-col cursor-pointer">
-                  <span>Mandatory Fee</span>
-                  <span className="text-xs font-normal text-zinc-500">
-                    Mandatory fees are summed for accepted and registered students. Adding a
-                    mandatory fee updates their total billed and balance due automatically.
+                <span className="text-sm text-zinc-700">
+                  <span className="font-bold">Mandatory fee</span>
+                  <span className="mt-1 block text-xs text-zinc-500">
+                    Included in registration requirements and student balance due.
                   </span>
-                </label>
-              </div>
+                </span>
+              </label>
 
-              <div className="pt-4 border-t border-zinc-100 flex justify-end gap-3">
+              <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 bg-zinc-100 text-zinc-700 font-bold rounded-xl hover:bg-zinc-200 transition-colors"
+                  onClick={closeModal}
+                  className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-bold text-zinc-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center gap-2 transition-colors disabled:opacity-50 shadow-lg shadow-emerald-200"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                 >
-                  {isSubmitting ? "Creating..." : <><CheckCircle size={20} /> Create Fee</>}
+                  <CheckCircle size={18} />
+                  {isSubmitting
+                    ? "Saving…"
+                    : modalMode === "edit"
+                      ? "Save & log change"
+                      : "Create & log"}
                 </button>
               </div>
             </form>

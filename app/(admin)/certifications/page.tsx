@@ -3,7 +3,6 @@
 import { Award, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
 import api from "@/services/api";
 
 type EnrollmentRef = {
@@ -55,11 +54,10 @@ export default function CertificationsPage() {
           Certifications
         </h1>
         <p className="mt-2 text-sm text-slate-500">
-          {total} certificate{total === 1 ? "" : "s"} issued. Trends below use issue date.
+          {total} certificate{total === 1 ? "" : "s"} issued. Issue certificates from an
+          enrollment record.
         </p>
       </div>
-
-      <AdminAnalyticsCharts compact />
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">

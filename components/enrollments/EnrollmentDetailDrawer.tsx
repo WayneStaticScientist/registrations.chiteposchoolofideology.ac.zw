@@ -11,6 +11,7 @@ import {
   User,
   X,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 import { CertificatePanel } from "@/components/enrollments/CertificatePanel";
@@ -327,7 +328,7 @@ function InfoItem({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon;
   label: string;
   value: string;
 }) {

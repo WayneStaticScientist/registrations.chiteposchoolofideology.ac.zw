@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  History,
   LayoutDashboard,
   LogOut,
   Users,
@@ -108,6 +109,7 @@ export function Sidebar({
     { name: "Certifications", href: "/certifications", icon: Award },
     { name: "Staff & roles", href: "/employees", icon: Briefcase },
     { name: "Fee structures", href: "/fees", icon: CreditCard },
+    { name: "Fee change log", href: "/fees/changelog", icon: History },
   ];
 
   const navigate = (href: string) => {

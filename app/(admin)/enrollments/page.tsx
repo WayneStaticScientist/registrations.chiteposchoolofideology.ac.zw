@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Spinner } from "@heroui/spinner";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Loader2, RefreshCw, Search } from "lucide-react";
 
 import { EnrollmentDetailDrawer } from "@/components/enrollments/EnrollmentDetailDrawer";
 import api from "@/services/api";
@@ -31,6 +31,7 @@ export default function EnrollmentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [syncingBilling, setSyncingBilling] = useState(false);
 
   const fetchEnrollments = async () => {
     try {
@@ -68,6 +69,23 @@ export default function EnrollmentsPage() {
     );
   }, [enrollments, search]);
 
+  const handleValidateBilling = async () => {
+    setSyncingBilling(true);
+    try {
+      const res = await api.post("/enrollments/admin/sync-billing");
+      const d = res.data?.data;
+      await fetchEnrollments();
+      alert(
+        `Billing validated.\n\nMandatory total: USD ${(d?.mandatoryTotal ?? 0).toFixed(2)}\nAccepted/registered enrollments: ${d?.enrollmentsEligible ?? 0}\nUpdated: ${d?.enrollmentsUpdated ?? 0}\nAlready correct: ${d?.enrollmentsAlreadyCorrect ?? 0}`,
+      );
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { data?: { error?: string } } };
+      alert(axiosErr.response?.data?.error || "Failed to validate billing.");
+    } finally {
+      setSyncingBilling(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -101,15 +119,36 @@ export default function EnrollmentsPage() {
             Review applications, fees, payments, and certifications in one place.
           </p>
         </div>
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-          <p className="text-xs font-bold uppercase tracking-wide text-primary">
-            Current mandatory fees
-          </p>
-          <p className="text-lg font-bold text-slate-800">
-            USD {mandatoryTotal.toFixed(2)}
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+            <p className="text-xs font-bold uppercase tracking-wide text-primary">
+              Current mandatory fees
+            </p>
+            <p className="text-lg font-bold text-slate-800">
+              USD {mandatoryTotal.toFixed(2)}
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={syncingBilling}
+            onClick={() => void handleValidateBilling()}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:opacity-60"
+            title="Apply current mandatory fee total to all accepted and registered enrollments"
+          >
+            {syncingBilling ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw size={18} className="text-primary" />
+            )}
+            Validate billing
+          </button>
         </div>
       </div>
+      <p className="-mt-2 text-xs text-zinc-500">
+        Use <strong>Validate billing</strong> after adding fees if students still show $0
+        billed — it sets <code className="rounded bg-zinc-100 px-1">totalBilled</code> to the
+        current mandatory total (paid amounts are unchanged; balance due updates automatically).
+      </p>
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
