@@ -497,6 +497,7 @@ export type PaymentReceiptData = {
   amount: number;
   methodLabel?: string;
   channelLabel?: string;
+  notes?: string;
   initiatedAt?: string;
   payedAt?: string;
   createdAt?: string;
@@ -538,6 +539,7 @@ export async function downloadPaymentReceiptPdf(row: PaymentReceiptData) {
     ["Confirmed paid at", formatExactDateTime(row.payedAt)],
     ["Recorded in system", formatExactDateTime(row.createdAt)],
     ["Processing status", statusLabel(row.status)],
+    ...(row.notes ? [["Notes", row.notes] as [string, string]] : []),
   ]);
 
   drawDisclaimer(

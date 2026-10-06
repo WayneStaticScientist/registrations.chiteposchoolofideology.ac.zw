@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 
 import { CertificatePanel } from "@/components/enrollments/CertificatePanel";
+import { RecordEnrollmentPayment } from "@/components/enrollments/RecordEnrollmentPayment";
+import { formatPaymentMethodLabel } from "@/lib/payment-labels";
 import api from "@/services/api";
 
 type EnrollmentRow = {
@@ -49,6 +51,7 @@ type PaymentRow = {
   method?: string;
   payerPhone?: string;
   channel?: string;
+  notes?: string;
   createdAt?: string;
   payedAt?: string;
 };
@@ -221,6 +224,11 @@ export function EnrollmentDetailDrawer({
                   )}
                 </div>
                 <div className="border-t border-slate-100 p-4">
+                  <RecordEnrollmentPayment
+                    amountDue={detail.financials.amountDue}
+                    enrollmentId={enrollmentId}
+                    onRecorded={() => void load()}
+                  />
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
                     Payment history
                   </p>
@@ -242,14 +250,16 @@ export function EnrollmentDetailDrawer({
                           {detail.payments.map((p) => (
                             <tr key={p._id}>
                               <td className="py-2 pr-4 font-mono text-xs">{p.reference}</td>
-                              <td className="py-2 pr-4 text-xs capitalize text-slate-600">
-                                {p.method === "ecocash"
-                                  ? "EcoCash"
-                                  : p.method === "onemoney"
-                                    ? "OneMoney"
-                                    : p.method === "paynow"
-                                      ? "Paynow"
-                                      : "—"}
+                              <td className="py-2 pr-4 text-xs text-slate-600">
+                                {formatPaymentMethodLabel(p.method)}
+                                {p.notes ? (
+                                  <span
+                                    className="mt-0.5 block max-w-[10rem] truncate text-[10px] text-slate-400"
+                                    title={p.notes}
+                                  >
+                                    {p.notes}
+                                  </span>
+                                ) : null}
                               </td>
                               <td className="py-2 pr-4 font-semibold">${p.amount.toFixed(2)}</td>
                               <td className="py-2 pr-4">

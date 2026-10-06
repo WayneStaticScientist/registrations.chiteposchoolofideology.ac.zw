@@ -5,6 +5,10 @@ import { Download, FileText, Loader2, Receipt, Search } from "lucide-react";
 
 import api from "@/services/api";
 import {
+  formatPaymentChannelLabel,
+  formatPaymentMethodLabel,
+} from "@/lib/payment-labels";
+import {
   downloadPaymentHistoryReportPdf,
   downloadPaymentReceiptPdf,
   formatExactDateTimeTable,
@@ -30,27 +34,11 @@ function statusClass(status: string) {
 }
 
 function methodLabel(row: PaymentRecord) {
-  return (
-    row.methodLabel ||
-    (row.method === "ecocash"
-      ? "EcoCash"
-      : row.method === "onemoney"
-        ? "OneMoney"
-        : row.method === "paynow"
-          ? "Paynow (web)"
-          : "—")
-  );
+  return row.methodLabel || formatPaymentMethodLabel(row.method);
 }
 
 function channelLabel(row: PaymentRecord) {
-  return (
-    row.channelLabel ||
-    (row.channel === "student"
-      ? "Student portal"
-      : row.channel === "registration"
-        ? "Registration portal"
-        : "—")
-  );
+  return row.channelLabel || formatPaymentChannelLabel(row.channel);
 }
 
 function toReceipt(row: PaymentRecord): PaymentReceiptData {
@@ -60,6 +48,7 @@ function toReceipt(row: PaymentRecord): PaymentReceiptData {
     amount: row.amount,
     methodLabel: methodLabel(row),
     channelLabel: channelLabel(row),
+    notes: row.notes,
     initiatedAt: row.initiatedAt,
     payedAt: row.payedAt,
     createdAt: row.createdAt,
