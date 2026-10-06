@@ -7,6 +7,7 @@ import api from "@/services/api";
 
 type AuditEntry = {
   _id: string;
+  isBaseline?: boolean;
   action: "created" | "updated";
   effectiveAt: string;
   createdAt: string;
@@ -75,8 +76,47 @@ export default function FeeChangelogPage() {
           to: to || undefined,
         },
       });
-      setEntries(res.data.data ?? []);
-      setMandatoryTotal(res.data.mandatoryTotal ?? 0);
+      let rows: AuditEntry[] = res.data.data ?? [];
+      const mandatory = res.data.mandatoryTotal ?? 0;
+
+      if (rows.length === 0 && !from && !to) {
+        const feesRes = await api.get("/payments/fees");
+        const fees: Array<{
+          _id: string;
+          name: string;
+          amount: number;
+          currency: string;
+          description?: string;
+          isMandatory?: boolean;
+          createdAt?: string;
+        }> = feesRes.data.data ?? feesRes.data ?? [];
+
+        rows = fees.map((fee) => ({
+          _id: `baseline-${fee._id}`,
+          isBaseline: true,
+          action: "created" as const,
+          effectiveAt: fee.createdAt ?? new Date().toISOString(),
+          createdAt: fee.createdAt ?? new Date().toISOString(),
+          mandatoryTotalBefore: 0,
+          mandatoryTotalAfter: fee.isMandatory ? fee.amount : 0,
+          enrollmentsBillingSynced: 0,
+          note: "Existing fee (recorded before audit trail)",
+          snapshot: {
+            name: fee.name,
+            amount: fee.amount,
+            currency: fee.currency,
+            isMandatory: fee.isMandatory ?? true,
+            description: fee.description,
+          },
+        }));
+      }
+
+      setEntries(rows);
+      setMandatoryTotal(mandatory || rows.reduce(
+        (sum, e) =>
+          sum + (e.snapshot.isMandatory ? e.snapshot.amount : 0),
+        0,
+      ));
     } catch (e) {
       console.error(e);
       setEntries([]);
@@ -135,7 +175,7 @@ export default function FeeChangelogPage() {
           Audit trail
         </p>
         <h1 className="mt-1 text-3xl font-black text-zinc-900">
-          Fee structure change log
+          Fee audit trail
         </h1>
         <p className="mt-2 text-sm text-zinc-600">
           Chitepo School of Ideology — recorded additions and updates with effective
@@ -183,7 +223,8 @@ export default function FeeChangelogPage() {
         </div>
       ) : entries.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zinc-200 py-16 text-center text-zinc-500">
-          No fee changes recorded yet. Add or update a fee structure to start the log.
+          No fee entries match this filter. Add or edit a fee on Fee structures, or
+          clear the date filter to see all records.
         </p>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm print:shadow-none">
@@ -217,12 +258,14 @@ export default function FeeChangelogPage() {
                   <td className="px-4 py-3 print:px-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${
-                        entry.action === "created"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-blue-100 text-blue-800"
+                        entry.isBaseline
+                          ? "bg-zinc-100 text-zinc-700"
+                          : entry.action === "created"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-blue-100 text-blue-800"
                       }`}
                     >
-                      {entry.action}
+                      {entry.isBaseline ? "baseline" : entry.action}
                     </span>
                   </td>
                   <td className="max-w-md px-4 py-3 text-zinc-700 print:px-2">

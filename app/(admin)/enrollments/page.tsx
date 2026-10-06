@@ -144,11 +144,6 @@ export default function EnrollmentsPage() {
           </button>
         </div>
       </div>
-      <p className="-mt-2 text-xs text-zinc-500">
-        Use <strong>Validate billing</strong> after adding fees if students still show $0
-        billed — it sets <code className="rounded bg-zinc-100 px-1">totalBilled</code> to the
-        current mandatory total (paid amounts are unchanged; balance due updates automatically).
-      </p>
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />

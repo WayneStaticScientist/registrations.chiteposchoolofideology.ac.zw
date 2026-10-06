@@ -165,7 +165,7 @@ export default function FeesPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
           >
             <History size={18} />
-            Change log
+            Audit trail
           </Link>
           <button
             type="button"
