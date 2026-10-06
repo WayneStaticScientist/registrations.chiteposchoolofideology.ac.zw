@@ -3,9 +3,11 @@
 import { Award, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { IssuedCertificateActions } from "@/components/certifications/IssuedCertificateActions";
 import api from "@/services/api";
 
 type EnrollmentRef = {
+  _id?: string;
   firstName?: string;
   lastName?: string;
   nationalId?: string;
@@ -81,6 +83,7 @@ export default function CertificationsPage() {
                   <th className="px-6 py-3">National ID</th>
                   <th className="px-6 py-3">Issued</th>
                   <th className="px-6 py-3">Summary</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -89,7 +92,9 @@ export default function CertificationsPage() {
                   const name =
                     en?.firstName || en?.lastName
                       ? `${en?.firstName ?? ""} ${en?.lastName ?? ""}`.trim()
-                      : "—";
+                      : "Student";
+                  const issueDate =
+                    row.issueDate ?? new Date().toISOString();
                   return (
                     <tr key={row._id} className="hover:bg-slate-50/80">
                       <td className="px-6 py-3 font-mono text-xs font-semibold text-primary">
@@ -104,6 +109,17 @@ export default function CertificationsPage() {
                       </td>
                       <td className="max-w-xs truncate px-6 py-3 text-slate-500">
                         {row.performanceSummary || "—"}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <IssuedCertificateActions
+                          templateKey={row._id}
+                          studentName={name}
+                          certificate={{
+                            certificateId: row.certificateId,
+                            issueDate,
+                            performanceSummary: row.performanceSummary,
+                          }}
+                        />
                       </td>
                     </tr>
                   );

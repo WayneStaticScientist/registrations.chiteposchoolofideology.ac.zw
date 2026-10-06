@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Award, Download, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { CertificateTemplate } from "@/components/CertificateTemplate";
+import { downloadCertificatePdf } from "@/lib/certificate-export";
 import api from "@/services/api";
 
 type CertRecord = {
@@ -65,23 +66,16 @@ export function CertificatePanel({
 
   const downloadPdf = useCallback(async (cert: CertRecord) => {
     setPdfCert(cert);
-    await new Promise((r) => setTimeout(r, 400));
-    const element = document.getElementById(`certificate-template-${enrollmentId}`);
-    if (!element) {
+    try {
+      await downloadCertificatePdf({
+        templateId: `certificate-template-${enrollmentId}`,
+        fileName: `${studentName.replace(/\s+/g, "_")}_Certificate.pdf`,
+      });
+    } catch {
       alert("Could not render certificate preview.");
-      return;
+    } finally {
+      setPdfCert(null);
     }
-    const { toPng } = await import("html-to-image");
-    const jsPDF = (await import("jspdf")).default;
-    const dataUrl = await toPng(element, { quality: 1, pixelRatio: 2 });
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "px",
-      format: [1123, 794],
-    });
-    pdf.addImage(dataUrl, "PNG", 0, 0, 1123, 794);
-    pdf.save(`${studentName.replace(/\s+/g, "_")}_Certificate.pdf`);
-    setPdfCert(null);
   }, [enrollmentId, studentName]);
 
   const handleIssueOrView = async () => {
