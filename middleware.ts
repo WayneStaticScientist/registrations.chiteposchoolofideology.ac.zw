@@ -5,8 +5,16 @@ const PUBLIC_PREFIXES = ["/login"];
 
 type AccessPayload = {
   role?: string;
+  roles?: string[];
   exp?: number;
 };
+
+function payloadHasAdmin(payload: AccessPayload): boolean {
+  if (Array.isArray(payload.roles) && payload.roles.length > 0) {
+    return payload.roles.includes("admin");
+  }
+  return payload.role === "admin";
+}
 
 function decodeAccessPayload(token: string): AccessPayload | null {
   try {
@@ -22,7 +30,7 @@ function decodeAccessPayload(token: string): AccessPayload | null {
 function isAccessTokenValid(token: string | undefined): boolean {
   if (!token) return false;
   const payload = decodeAccessPayload(token);
-  if (!payload || payload.role !== "admin") return false;
+  if (!payload || !payloadHasAdmin(payload)) return false;
   if (payload.exp && payload.exp * 1000 <= Date.now()) return false;
   return true;
 }

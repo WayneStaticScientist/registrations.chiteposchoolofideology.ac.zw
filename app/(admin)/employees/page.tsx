@@ -5,22 +5,53 @@ import { Briefcase, Plus, Search } from "lucide-react";
 import { Spinner } from "@heroui/spinner";
 import api from "@/services/api";
 
+type StaffPermission = "admin" | "lecturer";
+
 type Employee = {
   _id: string;
   firstName: string;
   lastName: string;
   email: string;
-  role: "admin" | "lecturer";
+  role: StaffPermission;
+  roles?: StaffPermission[];
   createdAt: string;
 };
 
-const emptyForm = {
+type FormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  permissions: Record<StaffPermission, boolean>;
+};
+
+const emptyForm: FormState = {
   firstName: "",
   lastName: "",
   email: "",
   password: "",
-  role: "lecturer" as "admin" | "lecturer",
+  permissions: { admin: false, lecturer: true },
 };
+
+function staffRolesFromEmployee(emp: Employee): StaffPermission[] {
+  const fromArray = emp.roles?.filter((r) => r === "admin" || r === "lecturer") ?? [];
+  if (fromArray.length > 0) return fromArray;
+  return emp.role === "admin" ? ["admin"] : ["lecturer"];
+}
+
+function permissionsToRoles(permissions: Record<StaffPermission, boolean>): StaffPermission[] {
+  const roles: StaffPermission[] = [];
+  if (permissions.admin) roles.push("admin");
+  if (permissions.lecturer) roles.push("lecturer");
+  return roles;
+}
+
+function formatRolesLabel(roles: StaffPermission[]): string {
+  if (roles.length === 0) return "—";
+  return roles
+    .map((r) => (r === "admin" ? "Admin" : "Lecturer"))
+    .join(" + ");
+}
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -61,7 +92,7 @@ export default function EmployeesPage() {
         emp.firstName?.toLowerCase().includes(q) ||
         emp.lastName?.toLowerCase().includes(q) ||
         emp.email?.toLowerCase().includes(q) ||
-        emp.role?.toLowerCase().includes(q),
+        staffRolesFromEmployee(emp).some((r) => r.includes(q)),
     );
   }, [employees, searchQuery]);
 
@@ -78,13 +109,17 @@ export default function EmployeesPage() {
   };
 
   const openEditForm = (emp: Employee) => {
+    const roles = staffRolesFromEmployee(emp);
     setEditingId(emp._id);
     setFormData({
       firstName: emp.firstName ?? "",
       lastName: emp.lastName ?? "",
       email: emp.email ?? "",
       password: "",
-      role: emp.role === "admin" ? "admin" : "lecturer",
+      permissions: {
+        admin: roles.includes("admin"),
+        lecturer: roles.includes("lecturer"),
+      },
     });
     setError("");
     setSuccess("");
@@ -101,27 +136,49 @@ export default function EmployeesPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const togglePermission = (key: StaffPermission) => {
+    setFormData((prev) => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [key]: !prev.permissions[key],
+      },
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
     setSuccess("");
 
+    const roles = permissionsToRoles(formData.permissions);
+    if (roles.length === 0) {
+      setError("Select at least one permission: Admin and/or Lecturer.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
+      const basePayload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        roles,
+      };
+
       if (isEditing && editingId) {
-        const payload: Record<string, string> = {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          role: formData.role,
-        };
+        const payload: Record<string, unknown> = { ...basePayload };
         if (formData.password.trim()) {
           payload.password = formData.password;
         }
         await api.patch(`/users/admin/employees/${editingId}`, payload);
         setSuccess("Employee updated successfully!");
       } else {
-        await api.post("/users/admin/employees", formData);
+        await api.post("/users/admin/employees", {
+          ...basePayload,
+          password: formData.password,
+        });
         setSuccess("Employee created successfully!");
       }
 
@@ -248,40 +305,43 @@ export default function EmployeesPage() {
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-bold text-zinc-700">System Role</label>
+                <label className="text-sm font-bold text-zinc-700">Permissions</label>
+                <p className="text-xs text-zinc-500 mb-2">
+                  Staff can be admin only, lecturer only, or both (common for institution leads).
+                </p>
                 <div className="flex gap-4">
-                  <label
-                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.role === "admin" ? "border-emerald-500 bg-emerald-50/50" : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"}`}
+                  <button
+                    type="button"
+                    onClick={() => togglePermission("admin")}
+                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${formData.permissions.admin ? "border-emerald-500 bg-emerald-50/50" : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"}`}
                   >
                     <input
-                      type="radio"
-                      name="role"
-                      value="admin"
-                      checked={formData.role === "admin"}
-                      onChange={handleInputChange}
-                      className="w-5 h-5 accent-emerald-600"
+                      type="checkbox"
+                      readOnly
+                      checked={formData.permissions.admin}
+                      className="w-5 h-5 accent-emerald-600 pointer-events-none"
                     />
                     <div>
                       <p className="font-bold text-zinc-900">Administrator</p>
-                      <p className="text-xs text-zinc-500">Full access to dashboard</p>
+                      <p className="text-xs text-zinc-500">Registrations portal & fees</p>
                     </div>
-                  </label>
-                  <label
-                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.role === "lecturer" ? "border-emerald-500 bg-emerald-50/50" : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => togglePermission("lecturer")}
+                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${formData.permissions.lecturer ? "border-emerald-500 bg-emerald-50/50" : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"}`}
                   >
                     <input
-                      type="radio"
-                      name="role"
-                      value="lecturer"
-                      checked={formData.role === "lecturer"}
-                      onChange={handleInputChange}
-                      className="w-5 h-5 accent-emerald-600"
+                      type="checkbox"
+                      readOnly
+                      checked={formData.permissions.lecturer}
+                      className="w-5 h-5 accent-emerald-600 pointer-events-none"
                     />
                     <div>
                       <p className="font-bold text-zinc-900">Lecturer</p>
-                      <p className="text-xs text-zinc-500">Access to course management</p>
+                      <p className="text-xs text-zinc-500">Courses, live sessions, content</p>
                     </div>
-                  </label>
+                  </button>
                 </div>
               </div>
             </div>
@@ -323,7 +383,7 @@ export default function EmployeesPage() {
               <tr>
                 <th className="px-6 py-4">Name</th>
                 <th className="px-6 py-4">Contact</th>
-                <th className="px-6 py-4">Role</th>
+                <th className="px-6 py-4">Permissions</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -359,15 +419,23 @@ export default function EmployeesPage() {
                       <div className="text-sm font-medium text-zinc-700">{emp.email}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase ${
-                          emp.role === "admin"
-                            ? "bg-purple-100 text-purple-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {emp.role}
-                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {staffRolesFromEmployee(emp).map((r) => (
+                          <span
+                            key={r}
+                            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase ${
+                              r === "admin"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        {formatRolesLabel(staffRolesFromEmployee(emp))}
+                      </p>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
