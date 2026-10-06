@@ -46,6 +46,9 @@ type PaymentRow = {
   amount: number;
   status: string;
   reference: string;
+  method?: string;
+  payerPhone?: string;
+  channel?: string;
   createdAt?: string;
   payedAt?: string;
 };
@@ -229,6 +232,7 @@ export function EnrollmentDetailDrawer({
                         <thead className="text-xs uppercase text-slate-500">
                           <tr>
                             <th className="pb-2 pr-4">Reference</th>
+                            <th className="pb-2 pr-4">Method</th>
                             <th className="pb-2 pr-4">Amount</th>
                             <th className="pb-2 pr-4">Status</th>
                             <th className="pb-2">Date</th>
@@ -238,6 +242,15 @@ export function EnrollmentDetailDrawer({
                           {detail.payments.map((p) => (
                             <tr key={p._id}>
                               <td className="py-2 pr-4 font-mono text-xs">{p.reference}</td>
+                              <td className="py-2 pr-4 text-xs capitalize text-slate-600">
+                                {p.method === "ecocash"
+                                  ? "EcoCash"
+                                  : p.method === "onemoney"
+                                    ? "OneMoney"
+                                    : p.method === "paynow"
+                                      ? "Paynow"
+                                      : "—"}
+                              </td>
                               <td className="py-2 pr-4 font-semibold">${p.amount.toFixed(2)}</td>
                               <td className="py-2 pr-4">
                                 <span

@@ -16,24 +16,33 @@
 @layer utilities {
     .sidebar-scroll {
         scrollbar-width: thin;
-        scrollbar-color: rgba(52, 211, 153, 0.35) transparent;
+        scrollbar-color: rgba(6, 95, 70, 0.55) transparent;
     }
 
     .sidebar-scroll::-webkit-scrollbar {
-        width: 4px;
+        width: 3px;
     }
 
     .sidebar-scroll::-webkit-scrollbar-track {
-        margin: 4px 0;
+        margin: 6px 0;
         background: transparent;
     }
 
     .sidebar-scroll::-webkit-scrollbar-thumb {
         border-radius: 9999px;
-        background: rgba(52, 211, 153, 0.35);
+        background: rgba(6, 78, 59, 0.45);
+        transition: background 0.2s ease;
+    }
+
+    .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+        background: rgba(16, 185, 129, 0.22);
     }
 
     .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-        background: rgba(52, 211, 153, 0.55);
+        background: rgba(52, 211, 153, 0.38);
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb:active {
+        background: rgba(52, 211, 153, 0.5);
     }
 }

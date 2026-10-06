@@ -9,6 +9,7 @@ import {
   History,
   LayoutDashboard,
   LogOut,
+  Receipt,
   Users,
   X,
   type LucideIcon,
@@ -22,6 +23,12 @@ type NavItem = {
   name: string;
   href: string;
   icon: LucideIcon;
+};
+
+type NavGroup = {
+  id: string;
+  label: string;
+  items: NavItem[];
 };
 
 function isNavActive(pathname: string | null, href: string) {
@@ -104,13 +111,34 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
 
-  const links: NavItem[] = [
-    { name: "Overview", href: "/", icon: LayoutDashboard },
-    { name: "Enrollments", href: "/enrollments", icon: Users },
-    { name: "Certifications", href: "/certifications", icon: Award },
-    { name: "Staff & roles", href: "/employees", icon: Briefcase },
-    { name: "Fee structures", href: "/fees", icon: CreditCard },
-    { name: "Fee audit trail", href: "/fees/changelog", icon: History },
+  const navGroups: NavGroup[] = [
+    {
+      id: "home",
+      label: "Home",
+      items: [{ name: "Overview", href: "/", icon: LayoutDashboard }],
+    },
+    {
+      id: "admissions",
+      label: "Admissions",
+      items: [
+        { name: "Enrollments", href: "/enrollments", icon: Users },
+        { name: "Certifications", href: "/certifications", icon: Award },
+      ],
+    },
+    {
+      id: "finance",
+      label: "Finance",
+      items: [
+        { name: "Payment history", href: "/payments", icon: Receipt },
+        { name: "Fee structures", href: "/fees", icon: CreditCard },
+        { name: "Fee audit trail", href: "/fees/changelog", icon: History },
+      ],
+    },
+    {
+      id: "administration",
+      label: "Administration",
+      items: [{ name: "Staff & roles", href: "/employees", icon: Briefcase }],
+    },
   ];
 
   const navigate = (href: string) => {
@@ -178,28 +206,37 @@ export function Sidebar({
           </button>
         </div>
 
-        <nav className="relative shrink-0 px-3 py-5">
-          {isExpanded && (
-            <p className="mb-3 px-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-500/90">
-              Menu
-            </p>
-          )}
-          <div className="flex flex-col gap-1">
-            {links.map((link) => (
-              <NavButton
-                key={link.href}
-                active={isNavActive(pathname, link.href)}
-                expanded={isExpanded}
-                item={link}
-                onClick={() => navigate(link.href)}
-              />
+        <nav className="sidebar-scroll relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 overscroll-y-contain">
+          <div className="flex flex-col gap-4 pb-2">
+            {navGroups.map((group, groupIndex) => (
+              <div key={group.id}>
+                {isExpanded ? (
+                  <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-500/90">
+                    {group.label}
+                  </p>
+                ) : groupIndex > 0 ? (
+                  <div
+                    aria-hidden
+                    className="mx-auto mb-2 h-px w-8 bg-emerald-800/70"
+                  />
+                ) : null}
+                <div className="flex flex-col gap-1">
+                  {group.items.map((link) => (
+                    <NavButton
+                      key={link.href}
+                      active={isNavActive(pathname, link.href)}
+                      expanded={isExpanded}
+                      item={link}
+                      onClick={() => navigate(link.href)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </nav>
 
-        <div aria-hidden className="min-h-0 flex-1" />
-
-        <div className="relative mt-auto shrink-0 space-y-1 border-t border-emerald-800/50 px-3 py-4">
+        <div className="relative shrink-0 space-y-1 border-t border-emerald-800/50 px-3 py-4">
           {isExpanded && (
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-500/90">
               Account
