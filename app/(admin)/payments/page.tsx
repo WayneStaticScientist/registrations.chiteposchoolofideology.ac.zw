@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Download, FileText, Loader2, Receipt, Search } from "lucide-react";
 
 import api from "@/services/api";
+import { formatPaymentAmountCell } from "@/lib/format-money";
 import {
   formatPaymentChannelLabel,
   formatPaymentMethodLabel,
@@ -19,6 +20,10 @@ type PaymentRecord = PaymentReceiptData & {
   _id: string;
   method?: string;
   channel?: string;
+  baseCurrencyCode?: string;
+  originalAmount?: number;
+  originalCurrencyCode?: string;
+  exchangeRateToBase?: number;
 };
 
 type HistoryResponse = {
@@ -49,6 +54,10 @@ function toReceipt(row: PaymentRecord): PaymentReceiptData {
     methodLabel: methodLabel(row),
     channelLabel: channelLabel(row),
     notes: row.notes,
+    baseCurrencyCode: row.baseCurrencyCode,
+    originalAmount: row.originalAmount,
+    originalCurrencyCode: row.originalCurrencyCode,
+    exchangeRateToBase: row.exchangeRateToBase,
     initiatedAt: row.initiatedAt,
     payedAt: row.payedAt,
     createdAt: row.createdAt,
@@ -285,7 +294,19 @@ export default function PaymentHistoryPage() {
                       <td className="px-4 py-3 text-zinc-700">{methodLabel(row)}</td>
                       <td className="px-4 py-3 text-zinc-600">{channelLabel(row)}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-bold text-slate-900">
-                        USD {row.amount.toFixed(2)}
+                        {(() => {
+                          const cell = formatPaymentAmountCell(row);
+                          return (
+                            <>
+                              <span className="block">{cell.primary}</span>
+                              {cell.secondary ? (
+                                <span className="mt-0.5 block text-xs font-normal text-slate-500">
+                                  {cell.secondary}
+                                </span>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3">
                         <span

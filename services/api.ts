@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9991/api/v1",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
@@ -21,20 +21,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         // Attempt to refresh token
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:9991/api/v1"}/auth/refresh`,
-          {},
-          { withCredentials: true },
-        );
+        const base =
+          process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "/api/v1";
+        await axios.post(`${base}/auth/refresh`, {}, { withCredentials: true });
 
         return api(originalRequest);
-      } catch (err) {
+      } catch {
         if (typeof window !== "undefined") {
           document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          window.location.href = "/login";
+          window.location.href = "/login?session=expired";
         }
-        return Promise.reject(err);
+        return Promise.reject(new Error("SESSION_EXPIRED"));
       }
     }
 

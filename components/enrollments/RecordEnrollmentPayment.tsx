@@ -1,13 +1,23 @@
 "use client";
 
 import { Loader2, PlusCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   ADMIN_RECORD_PAYMENT_METHODS,
   type PaymentMethodValue,
 } from "@/lib/payment-labels";
+import { formatMoney } from "@/lib/format-money";
 import api from "@/services/api";
+
+type CurrencyOption = {
+  _id: string;
+  code: string;
+  name: string;
+  isBase: boolean;
+  rateToBase: number;
+  decimals: number;
+};
 
 export function RecordEnrollmentPayment({
   enrollmentId,
@@ -22,20 +32,54 @@ export function RecordEnrollmentPayment({
 }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
+  const [paymentCurrency, setPaymentCurrency] = useState(currency);
+  const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
+  const [baseCode, setBaseCode] = useState(currency);
   const [method, setMethod] = useState<PaymentMethodValue>("cash");
   const [payerPhone, setPayerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const loadCurrencies = useCallback(async () => {
+    try {
+      const res = await api.get<{ data: CurrencyOption[]; baseCurrencyCode: string }>(
+        "/payments/currencies",
+        { params: { activeOnly: true } },
+      );
+      setCurrencies(res.data.data ?? []);
+      setBaseCode(res.data.baseCurrencyCode ?? currency);
+      setPaymentCurrency((prev) => prev || res.data.baseCurrencyCode || currency);
+    } catch {
+      /* keep defaults */
+    }
+  }, [currency]);
+
   useEffect(() => {
-    if (open && !amount) {
-      const suggested = amountDue > 0 ? amountDue.toFixed(2) : "";
-      setAmount(suggested);
+    if (open) void loadCurrencies();
+  }, [open, loadCurrencies]);
+
+  useEffect(() => {
+    if (open && !amount && amountDue > 0) {
+      setAmount(amountDue.toFixed(2));
     }
   }, [open, amountDue, amount]);
 
+  const selectedCurrency = useMemo(
+    () => currencies.find((c) => c.code === paymentCurrency),
+    [currencies, paymentCurrency],
+  );
+
+  const previewBase = useMemo(() => {
+    const parsed = Number.parseFloat(amount);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    if (!selectedCurrency) return null;
+    if (selectedCurrency.isBase) return parsed;
+    return Math.round(parsed * selectedCurrency.rateToBase * 100) / 100;
+  }, [amount, selectedCurrency]);
+
   const reset = () => {
     setAmount("");
+    setPaymentCurrency(baseCode);
     setMethod("cash");
     setPayerPhone("");
     setNotes("");
@@ -55,6 +99,7 @@ export function RecordEnrollmentPayment({
       await api.post("/payments/admin/record", {
         enrollmentId,
         amount: parsed,
+        currencyCode: paymentCurrency,
         method,
         payerPhone: payerPhone.trim() || undefined,
         notes: notes.trim() || undefined,
@@ -105,7 +150,28 @@ export function RecordEnrollmentPayment({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Amount ({currency})</span>
+          <span className="mb-1 block font-medium text-slate-700">Currency received</span>
+          <select
+            value={paymentCurrency}
+            onChange={(e) => setPaymentCurrency(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            {currencies.length === 0 ? (
+              <option value={paymentCurrency}>{paymentCurrency}</option>
+            ) : (
+              currencies.map((c) => (
+                <option key={c._id} value={c.code}>
+                  {c.code} — {c.name}
+                  {c.isBase ? " (base)" : ""}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block font-medium text-slate-700">
+            Amount ({paymentCurrency})
+          </span>
           <input
             type="number"
             min="0.01"
@@ -116,7 +182,7 @@ export function RecordEnrollmentPayment({
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
           />
         </label>
-        <label className="block text-sm">
+        <label className="block text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-slate-700">Method used</span>
           <select
             required
@@ -132,6 +198,15 @@ export function RecordEnrollmentPayment({
           </select>
         </label>
       </div>
+
+      {previewBase != null && paymentCurrency !== baseCode && selectedCurrency && (
+        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+          Ledger credit:{" "}
+          <strong>{formatMoney(baseCode, previewBase)}</strong>
+          {" · "}
+          rate 1 {paymentCurrency} = {selectedCurrency.rateToBase} {baseCode}
+        </p>
+      )}
 
       <label className="block text-sm">
         <span className="mb-1 block font-medium text-slate-700">

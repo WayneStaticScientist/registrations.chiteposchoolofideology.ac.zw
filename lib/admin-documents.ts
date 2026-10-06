@@ -495,6 +495,10 @@ export type PaymentReceiptData = {
   reference: string;
   status: string;
   amount: number;
+  baseCurrencyCode?: string;
+  originalAmount?: number;
+  originalCurrencyCode?: string;
+  exchangeRateToBase?: number;
   methodLabel?: string;
   channelLabel?: string;
   notes?: string;
@@ -516,10 +520,11 @@ export async function downloadPaymentReceiptPdf(row: PaymentReceiptData) {
     `Document issued: ${w.generatedAt}`,
   ]);
 
+  const base = row.baseCurrencyCode ?? "USD";
   drawAmountHighlight(
     w,
-    "Amount received",
-    `USD ${row.amount.toFixed(2)}`,
+    "Amount (base ledger)",
+    `${base} ${row.amount.toFixed(2)}`,
     statusLabel(row.status),
   );
 
@@ -532,7 +537,25 @@ export async function downloadPaymentReceiptPdf(row: PaymentReceiptData) {
   ]);
 
   drawSectionTitle(w, "Transaction details");
+  const fxRows: [string, string][] = [];
+  if (
+    row.originalCurrencyCode &&
+    row.originalAmount != null &&
+    row.originalCurrencyCode !== base
+  ) {
+    fxRows.push([
+      "Amount received (original)",
+      `${row.originalCurrencyCode} ${row.originalAmount.toFixed(2)}`,
+    ]);
+    if (row.exchangeRateToBase != null) {
+      fxRows.push([
+        "Exchange rate (at recording)",
+        `1 ${row.originalCurrencyCode} = ${row.exchangeRateToBase} ${base}`,
+      ]);
+    }
+  }
   drawKvTable(w, [
+    ...fxRows,
     ["Payment method", row.methodLabel || "Not recorded"],
     ["Payment channel", row.channelLabel || "Not recorded"],
     ["Initiated at", formatExactDateTime(row.initiatedAt || row.createdAt)],
@@ -720,7 +743,11 @@ export async function downloadPaymentHistoryReportPdf(
       row.payer.name,
       row.payer.nationalId || "—",
       row.methodLabel || "—",
-      `USD ${row.amount.toFixed(2)}`,
+      row.originalCurrencyCode &&
+      row.originalAmount != null &&
+      row.originalCurrencyCode !== (row.baseCurrencyCode ?? "USD")
+        ? `${row.baseCurrencyCode ?? "USD"} ${row.amount.toFixed(2)} (${row.originalCurrencyCode} ${row.originalAmount.toFixed(2)})`
+        : `${row.baseCurrencyCode ?? "USD"} ${row.amount.toFixed(2)}`,
       statusLabel(row.status),
     ]),
   );

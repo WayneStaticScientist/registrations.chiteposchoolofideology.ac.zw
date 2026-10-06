@@ -42,6 +42,9 @@ export default function FeesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
+  const [currencyOptions, setCurrencyOptions] = useState<
+    { code: string; name: string; isBase: boolean }[]
+  >([{ code: "USD", name: "US Dollar", isBase: true }]);
 
   const fetchFees = async () => {
     try {
@@ -58,6 +61,25 @@ export default function FeesPage() {
 
   useEffect(() => {
     void fetchFees();
+    void (async () => {
+      try {
+        const res = await api.get("/payments/currencies", {
+          params: { activeOnly: true },
+        });
+        const list = res.data?.data ?? [];
+        if (list.length) setCurrencyOptions(list);
+        const base = res.data?.baseCurrencyCode;
+        if (base) {
+          setFormData((prev) =>
+            prev.currency === "USD" && base !== "USD"
+              ? { ...prev, currency: base }
+              : prev,
+          );
+        }
+      } catch {
+        /* keep default USD */
+      }
+    })();
   }, []);
 
   const mandatoryTotal = useMemo(
@@ -334,8 +356,12 @@ export default function FeesPage() {
                     onChange={handleInputChange}
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30"
                   >
-                    <option value="USD">USD</option>
-                    <option value="ZWG">ZWG</option>
+                    {currencyOptions.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.code} — {c.name}
+                        {c.isBase ? " (base)" : ""}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CreditCard,
   History,
+  Coins,
   LayoutDashboard,
   LogOut,
   Receipt,
@@ -130,6 +131,7 @@ export function Sidebar({
       label: "Finance",
       items: [
         { name: "Payment history", href: "/payments", icon: Receipt },
+        { name: "Currencies", href: "/currencies", icon: Coins },
         { name: "Fee structures", href: "/fees", icon: CreditCard },
         { name: "Fee audit trail", href: "/fees/changelog", icon: History },
       ],

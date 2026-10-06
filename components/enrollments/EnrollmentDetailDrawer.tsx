@@ -16,6 +16,7 @@ import {
 
 import { CertificatePanel } from "@/components/enrollments/CertificatePanel";
 import { RecordEnrollmentPayment } from "@/components/enrollments/RecordEnrollmentPayment";
+import { formatPaymentAmountCell } from "@/lib/format-money";
 import { formatPaymentMethodLabel } from "@/lib/payment-labels";
 import api from "@/services/api";
 
@@ -52,6 +53,10 @@ type PaymentRow = {
   payerPhone?: string;
   channel?: string;
   notes?: string;
+  baseCurrencyCode?: string;
+  originalAmount?: number;
+  originalCurrencyCode?: string;
+  exchangeRateToBase?: number;
   createdAt?: string;
   payedAt?: string;
 };
@@ -261,7 +266,29 @@ export function EnrollmentDetailDrawer({
                                   </span>
                                 ) : null}
                               </td>
-                              <td className="py-2 pr-4 font-semibold">${p.amount.toFixed(2)}</td>
+                              <td className="py-2 pr-4">
+                                {(() => {
+                                  const cell = formatPaymentAmountCell({
+                                    amount: p.amount,
+                                    baseCurrencyCode: p.baseCurrencyCode,
+                                    originalAmount: p.originalAmount,
+                                    originalCurrencyCode: p.originalCurrencyCode,
+                                    exchangeRateToBase: p.exchangeRateToBase,
+                                  });
+                                  return (
+                                    <>
+                                      <span className="block font-semibold">
+                                        {cell.primary}
+                                      </span>
+                                      {cell.secondary ? (
+                                        <span className="text-[10px] text-slate-500">
+                                          {cell.secondary}
+                                        </span>
+                                      ) : null}
+                                    </>
+                                  );
+                                })()}
+                              </td>
                               <td className="py-2 pr-4">
                                 <span
                                   className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${paymentStatusClass(p.status)}`}
