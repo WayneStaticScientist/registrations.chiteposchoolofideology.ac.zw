@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Spinner } from "@heroui/spinner";
-import { Eye, CheckCircle, XCircle, User, MapPin, Phone, Mail } from "lucide-react";
-import { CertificateOfferModal } from "@/components/CertificateOfferModal";
+import { ChevronRight, Search } from "lucide-react";
+
+import { EnrollmentDetailDrawer } from "@/components/enrollments/EnrollmentDetailDrawer";
 import api from "@/services/api";
 
 interface Enrollment {
@@ -13,26 +14,38 @@ interface Enrollment {
   nationalId: string;
   phoneNumber: string;
   email?: string;
-  countryOfResidence: string;
-  city: string;
-  birthCity: string;
   status: string;
   createdAt: string;
+  financials?: { totalBilled?: number; totalPaid?: number };
+}
+
+function amountDue(enrollment: Enrollment): number {
+  const billed = enrollment.financials?.totalBilled ?? 0;
+  const paid = enrollment.financials?.totalPaid ?? 0;
+  return Math.max(0, billed - paid);
 }
 
 export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [mandatoryTotal, setMandatoryTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const fetchEnrollments = async () => {
     try {
-      const res = await api.get("/enrollments");
-      if (res.data?.data) {
-        setEnrollments(res.data.data);
+      const [enrollRes, feesRes] = await Promise.all([
+        api.get("/enrollments"),
+        api.get("/payments/fees"),
+      ]);
+      if (enrollRes.data?.data) {
+        setEnrollments(enrollRes.data.data);
       }
+      const fees = feesRes.data?.data ?? [];
+      const total = fees
+        .filter((f: { isMandatory?: boolean }) => f.isMandatory)
+        .reduce((sum: number, f: { amount: number }) => sum + (f.amount ?? 0), 0);
+      setMandatoryTotal(total);
     } catch (err) {
       console.error("Failed to fetch enrollments", err);
     } finally {
@@ -41,27 +54,19 @@ export default function EnrollmentsPage() {
   };
 
   useEffect(() => {
-    fetchEnrollments();
+    void fetchEnrollments();
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: string) => {
-    if (isUpdating) return;
-    setIsUpdating(true);
-    try {
-      await api.patch(`/enrollments/${id}/status`, { status });
-      // Refresh
-      await fetchEnrollments();
-      if (selectedEnrollment && selectedEnrollment._id === id) {
-         setSelectedEnrollment(null); // Close modal
-      }
-    } catch (error: unknown) {
-      console.error(error);
-      const axiosErr = error as { response?: { data?: { error?: string } } };
-      alert(axiosErr.response?.data?.error || "Failed to update enrollment status.");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return enrollments;
+    return enrollments.filter(
+      (e) =>
+        `${e.firstName} ${e.lastName} ${e.nationalId} ${e.email ?? ""}`
+          .toLowerCase()
+          .includes(q),
+    );
+  }, [enrollments, search]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,7 +84,7 @@ export default function EnrollmentsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Spinner size="lg" color="success" />
       </div>
     );
@@ -87,178 +92,124 @@ export default function EnrollmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-zinc-900 mb-2">
-          Enrollments
-        </h1>
-        <p className="text-zinc-500">
-          Review and manage student applications.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="mb-2 text-3xl font-black tracking-tight text-zinc-900">
+            Enrollments
+          </h1>
+          <p className="text-zinc-500">
+            Review applications, fees, payments, and certifications in one place.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">
+            Current mandatory fees
+          </p>
+          <p className="text-lg font-bold text-slate-800">
+            USD {mandatoryTotal.toFixed(2)}
+          </p>
+        </div>
       </div>
 
-      <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+        <input
+          type="search"
+          placeholder="Search by name, ID, or email…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-xl border border-zinc-200 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-zinc-50 border-b border-zinc-200">
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Applicant</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">National ID</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Date Applied</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
+              <tr className="border-b border-zinc-200 bg-zinc-50">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  Applicant
+                </th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  National ID
+                </th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  Billed / Paid / Due
+                </th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  Open
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {enrollments.length === 0 ? (
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">No enrollments found.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
+                    No enrollments found.
+                  </td>
                 </tr>
               ) : (
-                enrollments.map((enrollment) => (
-                  <tr key={enrollment._id} className="hover:bg-zinc-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-zinc-900">{enrollment.firstName} {enrollment.lastName}</div>
-                      <div className="text-sm text-zinc-500">{enrollment.phoneNumber}</div>
-                      {enrollment.email && (
-                        <div className="text-sm text-zinc-500">{enrollment.email}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-zinc-600 font-medium">{enrollment.nationalId}</td>
-                    <td className="px-6 py-4 text-zinc-500 text-sm">
-                      {new Date(enrollment.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(enrollment.status)}`}>
-                        {enrollment.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => setSelectedEnrollment(enrollment)}
-                          className="p-2 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye size={20} />
-                        </button>
-                        {(enrollment.status === 'accepted' || enrollment.status === 'registered') && (
-                          <button 
-                            onClick={() => {
-                              setSelectedEnrollment(enrollment);
-                              setShowCertificateModal(true);
-                            }}
-                            className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="Offer Certificate"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
-                          </button>
+                filtered.map((enrollment) => {
+                  const billed = enrollment.financials?.totalBilled ?? 0;
+                  const paid = enrollment.financials?.totalPaid ?? 0;
+                  const due = amountDue(enrollment);
+
+                  return (
+                    <tr
+                      key={enrollment._id}
+                      className="cursor-pointer transition-colors hover:bg-zinc-50/80"
+                      onClick={() => setSelectedId(enrollment._id)}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-zinc-900">
+                          {enrollment.firstName} {enrollment.lastName}
+                        </div>
+                        <div className="text-sm text-zinc-500">{enrollment.phoneNumber}</div>
+                        {enrollment.email && (
+                          <div className="text-sm text-zinc-500">{enrollment.email}</div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-6 py-4 font-medium text-zinc-600">
+                        {enrollment.nationalId}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="font-medium text-zinc-800">
+                          ${billed.toFixed(2)}{" "}
+                          <span className="text-zinc-400">/</span> ${paid.toFixed(2)}
+                        </div>
+                        <div
+                          className={`text-xs font-semibold ${due > 0 ? "text-amber-600" : "text-emerald-600"}`}
+                        >
+                          {due > 0 ? `Due $${due.toFixed(2)}` : "Settled"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${getStatusColor(enrollment.status)}`}
+                        >
+                          {enrollment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right text-primary">
+                        <ChevronRight className="ml-auto" size={20} />
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Details Modal */}
-      {selectedEnrollment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-8 py-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-              <h2 className="text-xl font-bold text-zinc-900">Applicant Details</h2>
-              <button 
-                onClick={() => setSelectedEnrollment(null)}
-                className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-300 hover:text-zinc-700 transition-colors"
-              >
-                &times;
-              </button>
-            </div>
-            
-            <div className="p-8">
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                  <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                    <User size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Full Name</span>
-                  </div>
-                  <p className="font-bold text-zinc-900 text-lg">{selectedEnrollment.firstName} {selectedEnrollment.lastName}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                    <MapPin size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Location</span>
-                  </div>
-                  <p className="font-bold text-zinc-900">{selectedEnrollment.city}, {selectedEnrollment.countryOfResidence}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                    <Phone size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Phone</span>
-                  </div>
-                  <p className="font-bold text-zinc-900">{selectedEnrollment.phoneNumber}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                    <Mail size={16} /> <span className="text-xs font-bold uppercase tracking-wider">Email</span>
-                  </div>
-                  <p className="font-bold text-zinc-900 break-all">
-                    {selectedEnrollment.email || "—"}
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 text-zinc-400 mb-1">
-                    <User size={16} /> <span className="text-xs font-bold uppercase tracking-wider">National ID</span>
-                  </div>
-                  <p className="font-bold text-zinc-900">{selectedEnrollment.nationalId}</p>
-                </div>
-              </div>
-
-              <div className="pt-8 border-t border-zinc-100 flex justify-end gap-4">
-                {selectedEnrollment.status === 'pending' ? (
-                  <>
-                    <button 
-                      onClick={() => handleUpdateStatus(selectedEnrollment._id, 'rejected')}
-                      disabled={isUpdating}
-                      className="px-6 py-3 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 flex items-center gap-2 transition-colors disabled:opacity-50"
-                    >
-                      <XCircle size={20} /> Decline
-                    </button>
-                    <button 
-                      onClick={() => handleUpdateStatus(selectedEnrollment._id, 'accepted')}
-                      disabled={isUpdating}
-                      className="px-6 py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2 transition-colors shadow-lg shadow-emerald-200 disabled:opacity-50"
-                    >
-                      <CheckCircle size={20} /> Accept & Verify
-                    </button>
-                  </>
-                ) : selectedEnrollment.status === 'accepted' || selectedEnrollment.status === 'registered' ? (
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => setShowCertificateModal(true)}
-                      className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow hover:bg-emerald-700 transition-colors"
-                    >
-                      Offer Certificate
-                    </button>
-                    <div className="flex-1 py-3 bg-zinc-100 text-zinc-500 font-bold rounded-xl text-center">
-                      Status: <span className="uppercase">{selectedEnrollment.status}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full py-3 bg-zinc-100 text-zinc-500 font-bold rounded-xl text-center">
-                    Status: <span className="uppercase">{selectedEnrollment.status}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCertificateModal && selectedEnrollment && (
-        <CertificateOfferModal
-          enrollmentId={selectedEnrollment._id}
-          studentName={`${selectedEnrollment.firstName} ${selectedEnrollment.lastName}`}
-          onClose={() => setShowCertificateModal(false)}
+      {selectedId && (
+        <EnrollmentDetailDrawer
+          enrollmentId={selectedId}
+          onClose={() => setSelectedId(null)}
+          onStatusUpdated={() => void fetchEnrollments()}
         />
       )}
     </div>
