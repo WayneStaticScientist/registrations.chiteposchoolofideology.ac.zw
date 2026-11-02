@@ -45,4 +45,16 @@
     .sidebar-scroll::-webkit-scrollbar-thumb:active {
         background: rgba(52, 211, 153, 0.5);
     }
+
+    .font-cinzel {
+        font-family: var(--font-cinzel), 'Cinzel', Georgia, 'Times New Roman', serif;
+    }
+
+    .font-playfair {
+        font-family: var(--font-playfair), 'Playfair Display', Georgia, 'Times New Roman', serif;
+    }
+
+    .font-script {
+        font-family: var(--font-script), 'Alex Brush', 'Brush Script MT', cursive;
+    }
 }

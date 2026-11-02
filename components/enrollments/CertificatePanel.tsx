@@ -11,6 +11,9 @@ type CertRecord = {
   certificateId: string;
   issueDate: string;
   performanceSummary?: string;
+  courseName?: string;
+  certificateType?: string;
+  heldAt?: string;
 };
 
 type Performance = {
@@ -207,6 +210,9 @@ export function CertificatePanel({
               issueDate={certificate.issueDate}
               performanceSummary={certificate.performanceSummary ?? ""}
               studentName={studentName}
+              courseName={certificate.courseName}
+              certificateType={certificate.certificateType}
+              heldAt={certificate.heldAt}
               templateId={`certificate-preview-${enrollmentId}`}
             />
           </div>
@@ -220,6 +226,9 @@ export function CertificatePanel({
             issueDate={pdfCert.issueDate}
             performanceSummary={pdfCert.performanceSummary ?? ""}
             studentName={studentName}
+            courseName={pdfCert.courseName}
+            certificateType={pdfCert.certificateType}
+            heldAt={pdfCert.heldAt}
             templateId={`certificate-template-${enrollmentId}`}
             variant="export"
           />

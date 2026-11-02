@@ -1,7 +1,12 @@
 import "@/styles/globals.css";
 import clsx from "clsx";
 import { Providers } from "./providers";
-import { fontSans } from "@/config/fonts";
+import {
+  fontSans,
+  fontCinzel,
+  fontPlayfair,
+  fontAlexBrush,
+} from "@/config/fonts";
 import { Metadata, Viewport } from "next";
 import { siteConfig } from "@/config/site";
 
@@ -35,6 +40,9 @@ export default function RootLayout({
         className={clsx(
           "min-h-screen text-foreground bg-background font-sans antialiased",
           fontSans.variable,
+          fontCinzel.variable,
+          fontPlayfair.variable,
+          fontAlexBrush.variable,
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificate Preview - Chitepo School of Ideology</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,400;1,600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #e2e8f0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .cert-container {
+      position: relative;
+      width: 1123px;
+      height: 794px;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      overflow: hidden;
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #18181b;
+    }
+    .cert-svg-overlay {
+      position: absolute;
+      inset: 0;
+      width: 1123px;
+      height: 794px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .cert-content {
+      position: relative;
+      z-index: 10;
+      width: 1123px;
+      height: 794px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 30px 54px 22px 54px;
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+    }
+    .header-logo-box {
+      width: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .header-title {
+      font-family: 'Cinzel', 'Playfair Display', serif;
+      font-size: 34px;
+      font-weight: 900;
+      color: #b91c1c;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .divider-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .divider-stripe-left {
+      height: 3px;
+      width: 180px;
+      border-radius: 9999px;
+      background: linear-gradient(to right, #008738, #FFCE00, #D4121A, #000000);
+    }
+    .divider-stripe-right {
+      height: 3px;
+      width: 180px;
+      border-radius: 9999px;
+      background: linear-gradient(to right, #000000, #D4121A, #FFCE00, #008738);
+    }
+    .star-icon {
+      width: 18px;
+      height: 18px;
+      fill: #f59e0b;
+    }
+    .main-title {
+      font-family: 'Cinzel', 'Playfair Display', serif;
+      font-size: 52px;
+      font-weight: 900;
+      color: #083a22;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-align: center;
+      margin-top: 4px;
+      line-height: 1;
+    }
+    .of-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 300px;
+      margin: -4px auto 0 auto;
+    }
+    .of-line {
+      height: 1.5px;
+      flex: 1;
+      background: #c28b24;
+    }
+    .of-text {
+      font-family: 'Alex Brush', 'Brush Script MT', cursive;
+      font-size: 32px;
+      font-style: italic;
+      color: #b47818;
+      line-height: 1;
+    }
+    .sub-title {
+      font-family: 'Cinzel', 'Playfair Display', serif;
+      font-size: 27px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #18181b;
+      text-align: center;
+      margin-top: -2px;
+      line-height: 1.1;
+    }
+    .body-section {
+      text-align: center;
+      margin-top: -6px;
+    }
+    .certify-text {
+      font-size: 18px;
+      font-style: italic;
+      color: #27272a;
+    }
+    .student-name-box {
+      max-width: 580px;
+      margin: 4px auto 0 auto;
+    }
+    .student-name {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #09090b;
+      line-height: 1.2;
+    }
+    .dotted-baseline {
+      width: 100%;
+      border-bottom: 1.5px dotted #3f3f46;
+      margin-top: 2px;
+    }
+    .completed-text {
+      font-size: 17px;
+      color: #27272a;
+      margin-top: 6px;
+    }
+    .course-title {
+      font-family: 'Cinzel', 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #991b1b;
+      margin-top: 3px;
+    }
+    .school-statement {
+      font-size: 17px;
+      color: #27272a;
+      margin-top: 3px;
+    }
+    .school-highlight {
+      font-weight: 800;
+      color: #065f46;
+    }
+    .ledger-box {
+      width: 440px;
+      margin: 10px auto 0 auto;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      text-align: left;
+    }
+    .ledger-row {
+      display: flex;
+      align-items: baseline;
+    }
+    .ledger-label {
+      width: 124px;
+      font-weight: 700;
+      color: #09090b;
+    }
+    .ledger-val {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #18181b;
+    }
+    .ledger-dotted {
+      flex: 1;
+      margin-left: 8px;
+      border-bottom: 1px dotted #71717a;
+    }
+    .footer-section {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 24px 10px 24px;
+    }
+    .sig-col {
+      width: 230px;
+      text-align: center;
+    }
+    .sig-img-box {
+      position: relative;
+      height: 56px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .sig-img {
+      height: 56px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: -3px;
+    }
+    .sig-rule {
+      height: 1.5px;
+      width: 100%;
+      background: #18181b;
+    }
+    .sig-title {
+      margin-top: 5px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #09090b;
+    }
+    .sig-subtitle {
+      font-size: 12px;
+      color: #3f3f46;
+    }
+    .seal-box {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: -8px;
+    }
+    .seal-img {
+      height: 118px;
+      width: auto;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="cert-container">
+    <!-- SVG Borders, Chamfered Gold Frame, Chevrons, Laurel Wreath -->
+    <svg class="cert-svg-overlay" viewBox="0 0 1123 794" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Zimbabwe Flag 7-stripe corner diagonal cluster: s = x + y -->
+        <g id="corner-flag-cluster">
+          <polygon points="0,0 38,0 0,38" fill="#01512a" />
+          <polygon points="38,0 54,0 0,54 0,38" fill="#f6c90a" />
+          <polygon points="54,0 72,0 0,72 0,54" fill="#e3001b" />
+          <polygon points="72,0 90,0 0,90 0,72" fill="#000000" />
+          <polygon points="90,0 100,0 0,100 0,90" fill="#e3001b" />
+          <polygon points="100,0 108,0 0,108 0,100" fill="#f6c90a" />
+          <polygon points="108,0 116,0 0,116 0,108" fill="#01512a" />
+        </g>
+
+        <!-- Detailed 2-tone pointed laurel leaf definition with seamless root joint -->
+        <g id="laurel-leaf-pair">
+          <!-- Root joint that blends with the stem -->
+          <circle cx="0" cy="0" r="3.5" fill="#adc4b4" />
+
+          <!-- Left Leaf: angled outward-left at -32 deg -->
+          <g transform="rotate(-32)">
+            <path d="M 0,0 C -12,-20 -24,-48 0,-76 C -5,-52 -4,-25 0,0 Z" fill="#b2c8b6" />
+            <path d="M 0,0 C 12,-20 24,-48 0,-76 C 5,-52 4,-25 0,0 Z" fill="#d2e4d8" />
+            <line x1="0" y1="0" x2="0" y2="-76" stroke="#9bb4a2" stroke-width="1.2" />
+          </g>
+
+          <!-- Right Leaf: angled outward-right at +32 deg -->
+          <g transform="rotate(32)">
+            <path d="M 0,0 C -12,-20 -24,-48 0,-76 C -5,-52 -4,-25 0,0 Z" fill="#b2c8b6" />
+            <path d="M 0,0 C 12,-20 24,-48 0,-76 C 5,-52 4,-25 0,0 Z" fill="#d2e4d8" />
+            <line x1="0" y1="0" x2="0" y2="-76" stroke="#9bb4a2" stroke-width="1.2" />
+          </g>
+
+          <!-- Center Upward Bud/Leaf -->
+          <g transform="scale(0.78) translate(0, -14)">
+            <path d="M 0,0 C -9,-16 -18,-38 0,-58 C -4,-39 -3,-19 0,0 Z" fill="#b2c8b6" />
+            <path d="M 0,0 C 9,-16 18,-38 0,-58 C 4,-39 3,-19 0,0 Z" fill="#d2e4d8" />
+            <line x1="0" y1="0" x2="0" y2="-58" stroke="#9bb4a2" stroke-width="1" />
+          </g>
+        </g>
+
+        <!-- Complete Left Laurel Branch: 100% Mathematically Rooted to the Bezier Spine -->
+        <g id="laurel-left-branch" opacity="0.92">
+          <!-- Continuous central stem (Exact cubic bezier) -->
+          <path d="M 495,650 C 330,640 195,490 202,330 C 208,195 285,128 400,108"
+                fill="none" stroke="#adc4b4" stroke-width="4" stroke-linecap="round" />
+
+          <!-- Nodes mathematically evaluated on the exact same curve and tangent -->
+          <g transform="translate(495, 650) rotate(-86.5)"><use href="#laurel-leaf-pair" transform="scale(0.85)" /></g>
+          <g transform="translate(408.6, 631.4) rotate(-69.4)"><use href="#laurel-leaf-pair" transform="scale(0.90)" /></g>
+          <g transform="translate(332.3, 589.8) rotate(-53.6)"><use href="#laurel-leaf-pair" transform="scale(0.95)" /></g>
+          <g transform="translate(270, 529.8) rotate(-38.6)"><use href="#laurel-leaf-pair" transform="scale(1.00)" /></g>
+          <g transform="translate(225.7, 456) rotate(-23.2)"><use href="#laurel-leaf-pair" transform="scale(1.04)" /></g>
+          <g transform="translate(203.5, 373.3) rotate(-6.5)"><use href="#laurel-leaf-pair" transform="scale(1.06)" /></g>
+          <g transform="translate(210.8, 268.1) rotate(14.3)"><use href="#laurel-leaf-pair" transform="scale(1.05)" /></g>
+          <g transform="translate(230.4, 216.9) rotate(28.4)"><use href="#laurel-leaf-pair" transform="scale(1.02)" /></g>
+          <g transform="translate(260.1, 175.9) rotate(43.6)"><use href="#laurel-leaf-pair" transform="scale(0.98)" /></g>
+          <g transform="translate(298.9, 144.4) rotate(58)"><use href="#laurel-leaf-pair" transform="scale(0.92)" /></g>
+          <g transform="translate(345.8, 122) rotate(70.3)"><use href="#laurel-leaf-pair" transform="scale(0.86)" /></g>
+          <g transform="translate(400, 108) rotate(80.1)"><use href="#laurel-leaf-pair" transform="scale(0.80)" /></g>
+        </g>
+      </defs>
+
+      <!-- 1. Outer Solid Green Band (13px along all edges) -->
+      <rect x="0" y="0" width="1123" height="794" fill="none" stroke="#01512a" stroke-width="26" />
+
+      <!-- 2. Four Zimbabwe Flag Corner Chevron Stripes -->
+      <use href="#corner-flag-cluster" />
+      <use href="#corner-flag-cluster" transform="translate(1123, 0) scale(-1, 1)" />
+      <use href="#corner-flag-cluster" transform="translate(0, 794) scale(1, -1)" />
+      <use href="#corner-flag-cluster" transform="translate(1123, 794) scale(-1, -1)" />
+
+      <!-- 3. Chamfered Gold Border (8-sided polygon with 45 deg corners) -->
+      <polygon points="102,20 1021,20 1103,102 1103,692 1021,774 102,774 20,692 20,102"
+               fill="none" stroke="#e5a00d" stroke-width="2.5" />
+
+      <!-- 4. Laurel Garland (Left and Mirrored Right) -->
+      <use href="#laurel-left-branch" />
+      <use href="#laurel-left-branch" transform="translate(1123, 0) scale(-1, 1)" />
+    </svg>
+
+    <!-- Certificate Content -->
+    <div class="cert-content">
+      <!-- Header -->
+      <div>
+        <div class="header-row">
+          <div class="header-logo-box">
+            <img src="./zanu_pf_emblem.png" alt="ZANU PF" style="height: 82px; width: auto; object-fit: contain;">
+          </div>
+          <div class="header-center">
+            <h1 class="header-title">Chitepo School of Ideology</h1>
+            <div class="divider-row">
+              <div class="divider-stripe-left"></div>
+              <svg class="star-icon" viewBox="0 0 24 24">
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+              </svg>
+              <div class="divider-stripe-right"></div>
+            </div>
+          </div>
+          <div class="header-logo-box">
+            <img src="./apple-touch-icon.png" alt="Chitepo Crest" style="height: 86px; width: auto; object-fit: contain;">
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <h2 class="main-title">Certificate</h2>
+          <div class="of-row">
+            <div class="of-line"></div>
+            <span class="of-text">of</span>
+            <div class="of-line"></div>
+          </div>
+          <h3 class="sub-title">Attendance</h3>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="body-section">
+        <p class="certify-text">This is to certify that</p>
+        <div class="student-name-box">
+          <p class="student-name">TENDAI CHIMUKWEMBO</p>
+          <div class="dotted-baseline"></div>
+        </div>
+        <p class="completed-text">has successfully completed the</p>
+        <h4 class="course-title">Basic Orientation Course</h4>
+        <p class="school-statement">at the <span class="school-highlight">CHITEPO SCHOOL OF IDEOLOGY</span></p>
+
+        <div class="ledger-box">
+          <div class="ledger-row">
+            <span class="ledger-label">Certificate No.:</span>
+            <span class="ledger-val">CSI-2026-0042</span>
+            <span class="ledger-dotted"></span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label">Held at:</span>
+            <span class="ledger-val">Harare Campus</span>
+            <span class="ledger-dotted"></span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label">Date:</span>
+            <span class="ledger-val">12 October 2026</span>
+            <span class="ledger-dotted"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signatures & Seal -->
+      <div class="footer-section">
+        <div class="sig-col">
+          <div class="sig-img-box">
+            <img src="./sig_commissar.png" alt="Commissar Signature" class="sig-img">
+          </div>
+          <div class="sig-rule"></div>
+          <p class="sig-title">National Political Commissar</p>
+        </div>
+
+        <div class="seal-box">
+          <img src="./cert_seal_ribbon.png" alt="Wax Seal" class="seal-img">
+        </div>
+
+        <div class="sig-col">
+          <div class="sig-img-box">
+            <img src="./sig_principal.png" alt="Principal Signature" class="sig-img">
+          </div>
+          <div class="sig-rule"></div>
+          <p class="sig-title">Principal</p>
+          <p class="sig-subtitle">Chitepo School of Ideology</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

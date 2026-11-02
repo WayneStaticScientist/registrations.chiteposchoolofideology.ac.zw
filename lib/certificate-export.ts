@@ -14,7 +14,12 @@ export async function downloadCertificatePdf(options: {
 
   const { toPng } = await import("html-to-image");
   const jsPDF = (await import("jspdf")).default;
-  const dataUrl = await toPng(element, { quality: 1, pixelRatio: 2 });
+  const dataUrl = await toPng(element, {
+    quality: 1,
+    pixelRatio: 2,
+    backgroundColor: "#ffffff",
+    cacheBust: true,
+  });
   const pdf = new jsPDF({
     orientation: "landscape",
     unit: "px",

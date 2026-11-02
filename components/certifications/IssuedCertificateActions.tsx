@@ -10,6 +10,9 @@ export type IssuedCertificateData = {
   certificateId: string;
   issueDate: string;
   performanceSummary?: string;
+  courseName?: string;
+  certificateType?: string;
+  heldAt?: string;
 };
 
 export function IssuedCertificateActions({
@@ -143,6 +146,9 @@ export function IssuedCertificateActions({
                   issueDate={certificate.issueDate}
                   performanceSummary={summary}
                   studentName={studentName}
+                  courseName={certificate.courseName}
+                  certificateType={certificate.certificateType}
+                  heldAt={certificate.heldAt}
                   templateId={previewTemplateId}
                 />
               </div>
@@ -159,6 +165,9 @@ export function IssuedCertificateActions({
             issueDate={certificate.issueDate}
             performanceSummary={summary}
             studentName={studentName}
+            courseName={certificate.courseName}
+            certificateType={certificate.certificateType}
+            heldAt={certificate.heldAt}
             templateId={exportTemplateId}
           />
         </div>
